@@ -9,7 +9,14 @@ class Transaction:
     
     def sign(self):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(n), where n = len(str(timestamp)) + len(from_user) + len(to_user), The function has to
+        concantenate the string and iterate through the string of n characters to assign an ascii_value which both run in O(n) time.
+        In addition, the for loop that generates the signature runs in O(1) time.Regardless of the len(transaction_data), 
+        there is no early-termination path since every character has to be processed.
+        
+        Worst case is also O(n), where n = len(str(timestamp)) + len(from_user) + len(to_user), this is the case as the 
+        per-character loop dominates the runtime, the other operations are constant and therefore run in O(1) time.
+
         """
 
         transaction_data = str(self.timestamp) + self.from_user + self.to_user
@@ -46,7 +53,13 @@ class Transaction:
 class ProcessingLine:
     def __init__(self, critical_transaction):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(1), where the input size is critical_transaction, This happens when there are
+        minimal initializations to be made. This function creates two LinkedStacks instances which takes O(1) time,
+        and the rest of the operations run in O(1) time.
+
+        Worst case is also O(1), where the input size is critical_transaction, this is the case as regardless of
+        the number of initializations and assignments, the function performs a fixed number of operations and
+        will always run in O(1) time.
         """
         self.critical_transaction = critical_transaction
         self.critical_timestamp = critical_transaction.timestamp
@@ -60,7 +73,12 @@ class ProcessingLine:
 
     def add_transaction(self, transaction):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(1), where n is the transaction object. This is the case when the transaction is
+        locked and therefore raises a runtime error, all operations in this function take O(1) time.
+
+        Worst case is also O(1), where n is a transaction object. This happens regardless as the method always executes
+        the same sequence of one conditional check, one comparison operation, and one stack push. Even if there are millions
+        of transactions as all operations run in O(1) time .
         """
         if self.is_locked:
             raise RuntimeError("Cannot add transactions - line is locked for processing")
