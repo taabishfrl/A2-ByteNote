@@ -1,3 +1,5 @@
+from data_structures.linked_stack import LinkedStack
+
 class Transaction:
     def __init__(self, timestamp, from_user, to_user):
         self.timestamp = timestamp
@@ -9,7 +11,36 @@ class Transaction:
         """
         Analyse your time complexity of this method.
         """
-        pass
+
+        transaction_data = str(self.timestamp) + self.from_user + self.to_user
+        
+        
+        hash_value = 0
+        prime_multiplier = 31  
+
+        for char in transaction_data:
+            if 'a' <= char <= 'z':
+                ascii_value = ord(char) - ord('a')
+            elif '0' <= char <= '9':
+                ascii_value = ord(char) - ord('0') + 26
+            else:
+                ascii_value = ord(char) % 36
+            
+            hash_value = hash_value * prime_multiplier + ascii_value
+        
+        
+        mod_value = 36 ** 36
+        hash_value = hash_value % mod_value
+        
+        signature = ""
+        LEGAL_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789"
+        
+        temp = hash_value
+        for _ in range(36):
+            signature = LEGAL_CHARACTERS[temp % 36] + signature
+            temp = temp // 36
+        
+        self.signature = signature
 
 
 class ProcessingLine:
@@ -17,13 +48,78 @@ class ProcessingLine:
         """
         Analyse your time complexity of this method.
         """
-        pass
+        self.critical_transaction = critical_transaction
+        self.critical_timestamp = critical_transaction.timestamp
+
+        self.before_stack = LinkedStack()
+        self.after_stack = LinkedStack()
+
+        self.is_locked = False
+        self.iterator_created = False
+
 
     def add_transaction(self, transaction):
         """
         Analyse your time complexity of this method.
         """
-        pass
+        if self.is_locked:
+            raise RuntimeError("Cannot add transactions - line is locked for processing")
+        
+        if transaction.timestamp <= self.critical_timestamp:
+            self.before_stack.push(transaction)
+        else:
+            self.after_stack.push(transaction)
+    
+    def __iter__(self):
+        if self.iterator_created:
+            raise RuntimeError("Iterator already created - cannot process line multiple times")
+        
+        self.is_locked = True
+        self.iterator_created = True
+        
+        return ProcessingLineIterator(self)
+    
+class ProcessingLineIterator:
+    
+    def __init__(self, processing_line):
+        self.processing_line = processing_line
+        self.phase = "before"  
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.phase == "before":
+            if not hasattr(self, 'before_temp_stack'):
+                self.before_temp_stack = LinkedStack()
+                
+                while not self.processing_line.before_stack.is_empty():
+                    self.before_temp_stack.push(self.processing_line.before_stack.pop())
+            
+            if not self.before_temp_stack.is_empty():
+                transaction = self.before_temp_stack.pop()
+                transaction.sign()  
+                return transaction
+            else:
+                self.phase = "critical"
+                return self.__next__()  
+        
+        elif self.phase == "critical":
+            self.phase = "after"
+            self.processing_line.critical_transaction.sign()  
+            return self.processing_line.critical_transaction
+        
+        elif self.phase == "after":
+            if not self.processing_line.after_stack.is_empty():
+                transaction = self.processing_line.after_stack.pop()
+                transaction.sign()  
+                return transaction
+            else:
+                self.phase = "done"
+                return self.__next__() 
+        
+        else: 
+            raise StopIteration
 
 
 if __name__ == "__main__":
