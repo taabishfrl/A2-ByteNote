@@ -144,7 +144,51 @@ class ProcessingBook:
         """
         return ProcessingBookIterator(self)
 
+class ProcessingBookIterator:
 
+    
+    def __init__(self, processing_book):
+        """
+        """
+        self.processing_book = processing_book
+        self.current_page = 0
+        self.nested_iterator = None
+    
+    def __iter__(self):
+        """
+        """
+        return self
+    
+    def __next__(self):
+        """
+        """
+        if self.nested_iterator is not None:
+            try:
+                return next(self.nested_iterator)
+            except StopIteration:
+                self.nested_iterator = None
+        
+        while self.current_page < len(self.processing_book.pages):
+            page = self.processing_book.pages[self.current_page]
+            
+            if page is not None:
+                if isinstance(page, tuple):
+                    transaction, amount = page
+                    self.current_page += 1
+                    return (transaction, amount)
+                    
+                elif isinstance(page, ProcessingBook):
+                    self.nested_iterator = iter(page)
+                    self.current_page += 1
+                    try:
+                        return next(self.nested_iterator)
+                    except StopIteration:
+                        self.nested_iterator = None
+                        continue
+            
+            self.current_page += 1
+        
+        raise StopIteration
     
     def sample(self, required_size):
         """
