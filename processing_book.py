@@ -1,13 +1,16 @@
 from data_structures import ArrayR
-
 from processing_line import Transaction
 
 
 class ProcessingBook:
+
     LEGAL_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-    def __init__(self):
+    def __init__(self, level=0):
         self.pages = ArrayR(len(ProcessingBook.LEGAL_CHARACTERS))
+        self.level = level  
+        self.error_count = 0
+        self.transaction_count = 0
     
     def page_index(self, character):
         """
@@ -16,14 +19,132 @@ class ProcessingBook:
         """
         return ProcessingBook.LEGAL_CHARACTERS.index(character)
     
+    def __setitem__(self, transaction, amount):
+        """
+        Analyse your time complexity of this method.
+        """
+        
+        char = transaction.signature[self.level]
+        page_idx = self.page_index(char)
+        
+        current_page = self.pages[page_idx]
+        
+        if current_page is None:
+            self.pages[page_idx] = (transaction, amount)
+            self.transaction_count += 1
+            
+        elif isinstance(current_page, tuple):
+            stored_transaction, stored_amount = current_page
+            
+            if stored_transaction.signature == transaction.signature:
+                if stored_amount == amount:
+                    return
+                else:
+                    self.error_count += 1
+                    return
+            else:
+                nested_book = ProcessingBook(level=self.level + 1)
+                
+                nested_book[stored_transaction] = stored_amount
+                
+                nested_book[transaction] = amount
+                
+                self.pages[page_idx] = nested_book
+
+                self.transaction_count += 1
+                
+        elif isinstance(current_page, ProcessingBook):
+            old_error_count = current_page.error_count
+            old_count = current_page.transaction_count
+
+            current_page[transaction] = amount
+            
+            self.error_count += current_page.error_count - old_error_count
+            self.transaction_count += current_page.transaction_count - old_count
+
+    def __getitem__(self, transaction):
+        """
+        Analyse your time complexity of this method.
+        """
+        if self.level >= len(transaction.signature):
+            raise KeyError("Transaction not found")
+        
+        char = transaction.signature[self.level]
+        page_idx = self.page_index(char)
+        
+        current_page = self.pages[page_idx]
+        
+        if current_page is None:
+            raise KeyError("Transaction not found")
+            
+        elif isinstance(current_page, tuple):
+            stored_transaction, stored_amount = current_page
+            
+            if stored_transaction.signature == transaction.signature:
+                return stored_amount
+            else:
+                raise KeyError("Transaction not found")
+                
+        elif isinstance(current_page, ProcessingBook):
+            return current_page[transaction]
+        
+        raise KeyError("Transaction not found")
+    
+    def __delitem__(self, transaction):
+        """
+        Analyse your time complexity of this method.
+        """
+        if self.level >= len(transaction.signature):
+            raise KeyError("Transaction not found")
+        
+        char = transaction.signature[self.level]
+        page_idx = self.page_index(char)
+        
+        current_page = self.pages[page_idx]
+        
+        if current_page is None:
+            raise KeyError("Transaction not found")
+            
+        elif isinstance(current_page, tuple):
+            stored_transaction, stored_amount = current_page
+            
+            if stored_transaction.signature == transaction.signature:
+                self.pages[page_idx] = None
+                self.transaction_count -= 1
+            else:
+                raise KeyError("Transaction not found")
+                
+        elif isinstance(current_page, ProcessingBook):
+
+            old_count = current_page.transaction_count
+            current_page.__delitem__(transaction)
+
+            self.transaction_count -= (old_count - current_page.transaction_count)
+            
+            if current_page.transaction_count == 1:
+                for i in range(len(current_page.pages)):
+                    if current_page.pages[i] is not None:
+                        if isinstance(current_page.pages[i], tuple):
+                            self.pages[page_idx] = current_page.pages[i]
+                            break
+            elif current_page.transaction_count == 0:
+                self.pages[page_idx] = None
+    
     def get_error_count(self):
         """
         Returns the number of errors encountered while storing transactions.
         """
-        pass
+        return self.error_count
     
     def __len__(self):
-        pass
+        return self.transaction_count
+    
+    def __iter__(self):
+        """
+        """
+        return ProcessingBookIterator(self)
+
+
     
     def sample(self, required_size):
         """
@@ -31,7 +152,6 @@ class ProcessingBook:
         Analyse your time complexity of this method.
         """
         pass
-
 
 if __name__ == "__main__":
     # Write tests for your code here...
