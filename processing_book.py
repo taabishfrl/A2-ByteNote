@@ -21,7 +21,14 @@ class ProcessingBook:
     
     def __setitem__(self, transaction, amount):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(1), where n is len(transaction_signature), Best case happens when the page is empty, thereby
+        no collisions will occur. In this case, there is no recursive call to create a new nested book. The length of the signature
+        is also a constant of 36, therefore it runs in O(1) time. The other operations also run in O(1) time.
+
+        Worst case is also O(n), where n is len(transaction_signature), Worst case happens when the page is not empty, and
+        the method has to created multiple nested books to handle collisions. In this case, there is multiple recursive calls
+        and the method has to run in O(n) time.
+
         """
         
         char = transaction.signature[self.level]
@@ -64,7 +71,12 @@ class ProcessingBook:
 
     def __getitem__(self, transaction):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(1), where n is the len(transaction.signature). Best case happens when the transaction is 
+        found at the top level, and therefore the function does not have to perform any recursive calls, 
+        all other operations in the method run in O(1) time.
+
+        Worst case is O(n), where n is the len(transaction.signature), Worst case happens when the transaction is at the very end,
+        and therefore the function has to perform multiple recursive calls to retrieve the item, this runs in O(n) time. 
         """
         if self.level >= len(transaction.signature):
             raise KeyError("Transaction not found")
@@ -92,7 +104,13 @@ class ProcessingBook:
     
     def __delitem__(self, transaction):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(1), where n is len(transaction.signature), Best case happens when the transaction to be deleted
+        is at the very top level, and therefore the function does not have to perform any recursive calls, the rest of the operations
+        run in O(1) time.
+
+        Worst case is O(n), where n is len(transaction.signature), Worst case happens when the transaction to be deleted is deep in the nested books or
+        at the very end. Therefore, the function has to perform multiple recursive calls to retrieve and delete the item. This runs in
+        O(n) time.
         """
         if self.level >= len(transaction.signature):
             raise KeyError("Transaction not found")
@@ -141,6 +159,7 @@ class ProcessingBook:
     
     def __iter__(self):
         """
+        :complexity: Best and Worst case is O(1), as it simply returns the Iterator Class.
         """
         return ProcessingBookIterator(self)
 
@@ -149,6 +168,7 @@ class ProcessingBookIterator:
     
     def __init__(self, processing_book):
         """
+        :complexity: Best and Worst case is O(1), All operations in this method run in O(1) time as they are assignments.
         """
         self.processing_book = processing_book
         self.current_page = 0
@@ -156,11 +176,19 @@ class ProcessingBookIterator:
     
     def __iter__(self):
         """
+        :complexity: Best and Worst case is O(1), The iterator is simply returning itself for ProcessingBook.
         """
         return self
     
     def __next__(self):
         """
+        :complexity: Best case is O(1), this is the case when the page contains a direct transaction with no nested books, for example
+        "a...", "b...". Therefore, the method does not have to perform any recursive calls to access the nested books, The rest of the operations
+        in the method run in O(1) time.
+
+        Worst case is O(n), where n is len(self.processing_book.pages), Worst case happens when the prefix of the transactions are similar,
+        for example "aaaaaab","aaaaaaac", therefore the method has to perform multiple recursive calls to access the nested books, this runs
+        in O(n) time.
         """
         if self.nested_iterator is not None:
             try:
