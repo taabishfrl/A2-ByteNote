@@ -1,5 +1,7 @@
 from processing_line import Transaction
 from data_structures import ArrayR
+from data_structures import HashTableSeparateChaining
+from algorithms import insertion_sort
 
 
 class FraudDetection:
@@ -10,12 +12,76 @@ class FraudDetection:
         """
         Analyse your time complexity of this method.
         """
-        pass
+        if len(self.transactions) == 0:
+            return (1, 1)
+        
+        sig_length = len(self.transactions[0].signature)
+        
+        max_suspicion = 1
+        best_block_size = 1
+        
+        for block_size in range(1, sig_length + 1):
+            suspicion_score = self.calculate_suspicion(block_size)
+            
+            if suspicion_score > max_suspicion:
+                max_suspicion = suspicion_score
+                best_block_size = block_size
+        
+        return (best_block_size, max_suspicion)
+
+    def calculate_suspicion(self, block_size):
+        """
+        """
+        groups = HashTableSeparateChaining()
+        
+        for i in range(len(self.transactions)):
+            transaction = self.transactions[i]
+            signature = transaction.signature
+            
+            final_form = self.transform_signature(signature, block_size)
+            
+            try:
+                count = groups[final_form]
+                groups[final_form] = count + 1
+            except KeyError:
+                groups[final_form] = 1
+        
+        suspicion_score = 1
+        for count in groups:
+            suspicion_score *= count
+        
+        return suspicion_score
+    
+    def transform_signature(self, signature, block_size):
+        """
+        """
+        num_complete_blocks = len(signature) // block_size
+        blocks = ArrayR(num_complete_blocks)
+        
+        for i in range(num_complete_blocks):
+            start_idx = i * block_size
+            block = signature[start_idx:start_idx + block_size]
+            blocks[i] = block
+        
+        if num_complete_blocks > 0:
+            sorted_blocks = insertion_sort(blocks)
+        else:
+            sorted_blocks = blocks
+        
+        final_form = ""
+        for i in range(num_complete_blocks):
+            final_form += sorted_blocks[i]
+        
+        remaining_start = num_complete_blocks * block_size
+        if remaining_start < len(signature):
+            final_form += signature[remaining_start:]
+        
+        return final_form
 
     def rectify(self, functions):
         pass
 
-
+        
 if __name__ == "__main__":
     # Write tests for your code here...
     # We are not grading your tests, but we will grade your code with our own tests!
