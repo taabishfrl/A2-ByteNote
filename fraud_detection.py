@@ -10,7 +10,16 @@ class FraudDetection:
 
     def detect_by_blocks(self):
         """
-        Analyse your time complexity of this method.
+        :complexity: Best case is O(N X L^2), where N is the number of transactions and L is the length of the signature, Best case
+        happens when the block sizes are large, for example, S = 18, where S is the block size, therefore, 
+        this would result in having to sort fewer blocks per signature, resulting in the sorting cost being O(1), 
+        making the signature processing O(L) per transaction. Since we try L different block sizes for N transactions, 
+        each requiring O(N X L) work, the total is O(L X N X L) = O(N X L^2).
+
+        Worst case is O(N X L^3), where N is the number of transactions and L is the length of the signature, Worst case happens
+        when the block size is 1, This is because the signature would have to be broken into L number of blocks, and the sorting
+        cost would be in its worst case which is O(L^2), making the signature processing O(L^2) per transaction. Since we try L different
+        block sizes for N transactions, with the worst case requiring O(N x L^2) work, the total is O(L X N X L^2) = O(N X L^3).
         """
         if len(self.transactions) == 0:
             return (1, 1)
@@ -31,6 +40,7 @@ class FraudDetection:
 
     def calculate_suspicion(self, block_size):
         """
+        Calculate suspicion score for a given block size using hash table for grouping.
         """
         groups = HashTableSeparateChaining()
         
@@ -54,6 +64,7 @@ class FraudDetection:
     
     def transform_signature(self, signature, block_size):
         """
+        Create canonical form by extracting blocks, sorting them, and appending remaining chars.
         """
         num_complete_blocks = len(signature) // block_size
         blocks = ArrayR(num_complete_blocks)
@@ -79,8 +90,95 @@ class FraudDetection:
         return final_form
 
     def rectify(self, functions):
-        pass
+        best_function = None
+        best_mpcl = float('inf')
+        
+        for i in range(len(functions)):
+            hash_function = functions[i]
+            mpcl = self.calculate_max_probe_chain_length(hash_function)
+            
+            if mpcl < best_mpcl:
+                best_mpcl = mpcl
+                best_function = hash_function
+        
+        return (best_function, best_mpcl)
 
+    def calculate_max_probe_chain_length(self, hash_function):
+        hash_values = ArrayR(len(self.transactions))
+        max_hash = 0
+        
+        for i in range(len(self.transactions)):
+            hash_val = hash_function(self.transactions[i])
+            hash_values[i] = hash_val
+            if hash_val > max_hash:
+                max_hash = hash_val
+        
+        table_size = max_hash + 1
+        
+        if table_size < len(self.transactions):
+            return table_size
+        
+        hash_counts = ArrayR(table_size)
+        for i in range(table_size):
+            hash_counts[i] = 0
+        
+        for i in range(len(self.transactions)):
+            hash_counts[hash_values[i]] += 1
+        
+        return self.simulate_worst_case_probing(hash_counts, table_size)
+    
+    def simulate_worst_case_probing(self, hash_counts, table_size):
+        max_probe_length = 0
+        
+        max_probe_length = max(max_probe_length, 
+                            self.simulate_insertion_order(hash_counts, table_size, "sequential"))
+        
+        max_probe_length = max(max_probe_length, 
+                            self.simulate_insertion_order(hash_counts, table_size, "reverse"))
+        
+        return max_probe_length
+
+    def simulate_insertion_order(self, hash_counts, table_size, order):
+        table = ArrayR(table_size)
+        for i in range(table_size):
+            table[i] = False
+
+        max_probe_length = 0
+
+        num_positions_with_items = 0
+        for pos in range(table_size):
+            if hash_counts[pos] > 0:
+                num_positions_with_items += 1
+
+        positions = ArrayR(num_positions_with_items)
+        pos_index = 0
+        for pos in range(table_size):
+            if hash_counts[pos] > 0:
+                positions[pos_index] = pos
+                pos_index += 1
+
+        if order == "reverse":
+            indices = range(num_positions_with_items - 1, -1, -1)
+        else:
+            indices = range(num_positions_with_items)
+
+        for i in indices:
+            pos = positions[i]
+            for _ in range(hash_counts[pos]):
+                actual_pos = pos
+                probe_length = 0
+                start_pos = actual_pos
+
+                while table[actual_pos]:
+                    actual_pos = (actual_pos + 1) % table_size
+                    probe_length += 1
+                    if actual_pos == start_pos:
+                        return table_size
+
+                max_probe_length = max(max_probe_length, probe_length)
+                table[actual_pos] = True
+
+        return max_probe_length
         
 if __name__ == "__main__":
     # Write tests for your code here...
